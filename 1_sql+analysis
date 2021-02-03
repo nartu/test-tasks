@@ -1,0 +1,93 @@
+Вопрос 1
+
+  1. Представьте, что есть интернет-магазин. У маркетолога этого интернет
+  магазина возникла гипотеза, что если прислать пользователям смс-сообщение с
+  напоминанием о сервисе с небольшой скидкой, то пользователь сделает заказ (с
+  некоторой вероятностью), станет чаще покупать в магазине, и за следующий год
+  принесёт магазину больше прибыли. Как проверить эту гипотезу и принять решение
+  о том, следует ли использовать такой способ коммуникации?
+  
+Ответ:
+
+Если раннее в этом магазине были какие-то объявления о скидках. Взять
+пользователей из базы, которым была выслана информация о скидках. Посмотреть
+информацию о покупках и прибыли соответственно за неделю-месяц после сообщений.
+Посмотреть информацию о покупках за тот же временной интервал с теми же
+пользователями в период когда сообщений о скидках не было. Если полученная
+прибыль в случае оповещения явно превышает и окупает расходы, чем эквивалентный
+показатель в случае отсуствия оповещения о скидках, это говорит в пользу того,
+что смс-оповещение может сработать.
+
+Если не было подобных объявлений. Сделать тестовую рассылку: Произвольно выбрать
+N пользователей в системе. Разделить их на группы (чтобы выяснить среднюю
+погрешность). Разослать смс, выявить среднюю прибыль по подгруппе из этой группы
+A. Взять такое же количество "контрольных" пользователей (которым не было
+прислано смс), так же вычислить среднюю прибыль по подгруппам из группы B. Если
+результаты по A явно лучше результатов по B (окупаются все расходы и т.д), то
+можно делата смс рассылку.
+
+   Вопрос 2
+
+  Есть таблица событий, в которой собирается вся активность пользователя в
+  продукте. Колонки:
+
+      user_id
+
+      event_timestamp
+
+      event_name
+
+  Напишите запрос, который вернёт таблицу вида (по ссылке):
+  https://drive.google.com/file/d/1sx8MaX6oFYirTXaN5-yq9IkozvuYv8K3/view?usp=sharing
+
+  Решение принимается в формате SQL запроса. Укажите, какой именно диалект SQL
+  (MySQL, Postres, PL/SQL, ...) вы использовали при написании.
+
+Ответ:
+
+БД Postgresql
+
+Исходная таблица:
+create table t100 (
+ id serial primary key,
+ user_id integer not null,
+ event_timestamp timestamptz not null,
+ event_name varchar not null);
+
+Требуемый запрос:
+select to_char(et,'yyyy-mm') as "Event dates",
+visit1 as "Users that come first time",visit2 as "Users that come next month (from first column)",
+visit2 * 100/visit1 as "Probability of return, %"
+from
+(
+	select date_trunc('month',event_timestamp) as et from t100 group by et
+) as dates
+left join
+(
+	select dFirst, sum(1) as visit1,
+	sum(
+	case
+		when nextM = 1 then 1
+		else 0
+	end) as visit2
+	from
+	(
+		select m.user_id,dFirst,
+		max(
+		case
+			when dAll = dFirst + interval '1 month' then 1
+		end) as nextM
+		from
+		(select user_id, date_trunc('month',event_timestamp) as dAll
+		from t100) as m
+		left join
+		(select user_id, date_trunc('month',min(event_timestamp)) as dFirst
+		from t100 group by user_id) as f
+		on m.user_id = f.user_id
+		group by m.user_id,dFirst
+		order by m.user_id
+	) as visits
+	group by dFirst
+) as v
+on dates.et = v.dFirst
+order by dates.et;
