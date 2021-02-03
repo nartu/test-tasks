@@ -1,3 +1,13 @@
+#В архиве (https://drive.google.com/file/d/0B9inz0bjkoAKUm5YclNYdWNzWUU) найдёте большой текстовый файл. (4GB)
+
+#Задание: ответить на вопросы:
+
+#Сколько строк в файле?
+#Сколько раз встречается «a»?
+#Какие инструменты использовали?
+#Сколько времени ушло на выполнение задания?
+
+
 import os
 from datetime import datetime
 
@@ -13,7 +23,7 @@ strings = 0
 symbols_a = 0
 with open(file_for_analyze, 'r') as file:
     for line in file:
-        if(strings>=347800): print(line)
+        if(strings<=5): print(line)
         strings += 1
         symbols_a += line.lower().count("а")
 
